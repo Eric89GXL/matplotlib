@@ -359,9 +359,33 @@ latex_elements = {
 }
 
 
+def append_attr_meth_examples(app, what, name, obj, options, lines):
+    """Append SG examples backreferences to method and attr docstrings."""
+    # NumpyDoc nicely embeds method and attribute docstrings for us, but it
+    # does not respect the autodoc templates that would otherwise insert
+    # the .. include:: lines, so we need to do it.
+    # Eventually this could perhaps live in SG.
+    if what in ('attribute', 'method'):
+        size = os.path.getsize(os.path.join(
+            os.path.dirname(__file__), 'api', '_as_gen',
+            '%s.examples' % (name,)))
+        if size > 0:
+            lines += """
+.. rubric:: Examples using ``{0}``:
+
+.. include:: {1}.examples
+    :start-line: 5
+
+.. raw:: html
+
+    <div style="clear:both"></div>
+""".format(name.split('.')[-1], name).split('\n')
+
+
 def setup(app):
     if any(st in version for st in ('post', 'alpha', 'beta')):
         bld_type = 'dev'
     else:
         bld_type = 'rel'
     app.add_config_value('releaselevel', bld_type, 'env')
+    app.connect('autodoc-process-docstring', append_attr_meth_examples)
